@@ -23,8 +23,8 @@
 enum Direction {FORWARD, LEFT, RIGHT};
 
 // GPIO pin numbers on Raspberry Pi
-#define FORWARD_ECHO_GPIO 2
-#define FORWARD_TRIG_GPIO 3
+#define FORWARD_ECHO_GPIO 6
+#define FORWARD_TRIG_GPIO 5
 #define LEFT_ECHO_GPIO 4
 #define LEFT_TRIG_GPIO 14
 #define RIGHT_ECHO_GPIO 15

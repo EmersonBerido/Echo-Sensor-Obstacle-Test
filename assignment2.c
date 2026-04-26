@@ -80,7 +80,7 @@ int WaitForEchoHigh(int ECHO) {
       // echo pin didn't reach HIGH_LEVEL, error
       if (time_time() - startTime > TIMEOUT){
 
-        printf("Timeout exceeded: can't reach echo HIGH, retrying...\n");
+        // printf("Timeout exceeded: can't reach echo HIGH, retrying...\n");
         return -1;
       }
     }
