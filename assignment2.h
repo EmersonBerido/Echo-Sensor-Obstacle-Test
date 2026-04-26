@@ -33,7 +33,7 @@ enum Direction {FORWARD, LEFT, RIGHT};
 typedef struct {
   int TRIGGER;
   int ECHO;
-  Direction direction;
+  enum Direction direction;
 } EchoData;
 
 // Timeouts
