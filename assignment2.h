@@ -23,12 +23,12 @@
 enum Direction {FORWARD, LEFT, RIGHT};
 
 // GPIO pin numbers on Raspberry Pi
-#define FORWARD_ECHO_GPIO 20
-#define FORWARD_TRIG_GPIO 14
-#define LEFT_ECHO_GPIO 20
+#define FORWARD_ECHO_GPIO 2
+#define FORWARD_TRIG_GPIO 3
+#define LEFT_ECHO_GPIO 4
 #define LEFT_TRIG_GPIO 14
-#define RIGHT_ECHO_GPIO 20
-#define RIGHT_TRIG_GPIO 14
+#define RIGHT_ECHO_GPIO 15
+#define RIGHT_TRIG_GPIO 23
 
 typedef struct {
   int TRIGGER;
