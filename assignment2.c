@@ -110,7 +110,7 @@ double ReadDataInSeconds(int ECHO) {
   return totalTime;
 }
 
-EchoData* createReadDataArgs(int TRIGGER, int ECHO, Direction direction) {
+EchoData* createReadDataArgs(int TRIGGER, int ECHO, enum Direction direction) {
   EchoData* data = malloc(sizeof(EchoData));
   data->TRIGGER = TRIGGER;
   data->ECHO = ECHO;
