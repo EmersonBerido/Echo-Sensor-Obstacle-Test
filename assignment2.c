@@ -30,7 +30,7 @@ EchoData* pthreadArgs[3];
 int WaitForEchoHigh(int ECHO);
 double ReadDataInSeconds(int ECHO);
 void *ReadData(void* args);
-EchoData* createReadDataArgs(int TRIGGER, int ECHO, Direction direction);
+EchoData* createReadDataArgs(int TRIGGER, int ECHO, enum Direction direction);
 void freeReadDataArgs();
 void ExitProgram(int signal);
 
