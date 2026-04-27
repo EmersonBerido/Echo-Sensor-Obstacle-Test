@@ -20,39 +20,25 @@
 #include <stdlib.h>
 #include "assignment2.h"
 
+// thread vars
 volatile double forwardValue = 0;
 volatile double leftValue = 0;
 volatile double rightValue = 0;
-pthread_t threads[3];
-EchoData* pthreadArgs[3];
+pthread_t echoThread;
 
 // Helper Functions
 int WaitForEchoHigh(int ECHO);
 double ReadDataInSeconds(int ECHO);
-void *ReadData(void* args);
-EchoData* createReadDataArgs(int TRIGGER, int ECHO, enum Direction direction);
-void freeReadDataArgs();
+void UpdateEchoDate(int TRIGGER, int ECHO, enum Direction direction);
 void ExitProgram(int signal);
+void* ReadEchoData();
 
 int main() {
   if (gpioInitialise() < 0) return -1;
 
-  
-  EchoData* forwardData = createReadDataArgs(FORWARD_TRIG_GPIO, FORWARD_ECHO_GPIO, FORWARD);
-  EchoData* leftData = createReadDataArgs(LEFT_TRIG_GPIO, LEFT_ECHO_GPIO, LEFT);
-  EchoData* rightData = createReadDataArgs(RIGHT_TRIG_GPIO, RIGHT_ECHO_GPIO, RIGHT);
-  pthreadArgs[0] = forwardData;
-  pthreadArgs[1] = leftData;
-  pthreadArgs[2] = rightData;
-
-  
-  // crete threads
-  if (pthread_create(&threads[0], NULL, ReadData, (void*)forwardData) != 0) 
-    return -1;
-  if (pthread_create(&threads[1], NULL, ReadData, (void*)leftData) != 0) 
-    return -1;
-  if (pthread_create(&threads[2], NULL, ReadData, (void*)rightData) != 0) 
-    return -1;
+  // crete thread
+  if (pthread_create(&echoThread, NULL, ReadEchoData, NULL) != 0) 
+    return -1; 
 
   signal(SIGINT, ExitProgram);
   while(1) {
@@ -60,9 +46,7 @@ int main() {
     gpioDelay(100000); // 100 ms
   }
 
-  
   ExitProgram(0);
-  
   return 0;
 }
 
@@ -110,59 +94,67 @@ double ReadDataInSeconds(int ECHO) {
   return totalTime;
 }
 
-EchoData* createReadDataArgs(int TRIGGER, int ECHO, enum Direction direction) {
-  EchoData* data = malloc(sizeof(EchoData));
-  data->TRIGGER = TRIGGER;
-  data->ECHO = ECHO;
-  data->direction = direction;
-  return data;
-}
-
-void freeReadDataArgs() {
-  for (int i = 0; i < 3; i++) {
-    free(pthreadArgs[i]);
-    pthreadArgs[i] = NULL;
-  }
-}
-
-void *ReadData(void* args) {
-  EchoData* data = (EchoData*) args;
-
+/*
+  Thread function
+  Continuously reads echo data for forward/left/right
+  Small pauses so echoes dont clash
+*/
+void* ReadEchoData() {
+  // read forward, then left, then right
   // Set GPIO pin Input/Output; change this to pthread exit
-  if (gpioSetMode(data->TRIGGER, PI_OUTPUT) != 0) pthread_exit(NULL);
-  if (gpioSetMode(data->ECHO, PI_INPUT) != 0) pthread_exit(NULL);
+  if (gpioSetMode(FORWARD_TRIG_GPIO, PI_OUTPUT) != 0) pthread_exit(NULL);
+  if (gpioSetMode(FORWARD_ECHO_GPIO, PI_INPUT) != 0) pthread_exit(NULL);
+  if (gpioSetMode(LEFT_TRIG_GPIO, PI_OUTPUT) != 0) pthread_exit(NULL);
+  if (gpioSetMode(LEFT_ECHO_GPIO, PI_INPUT) != 0) pthread_exit(NULL);
+  if (gpioSetMode(RIGHT_TRIG_GPIO, PI_OUTPUT) != 0) pthread_exit(NULL);
+  if (gpioSetMode(RIGHT_ECHO_GPIO, PI_INPUT) != 0) pthread_exit(NULL);
   
   while (1) {
-    // Trigger sensor to start measuring
-    gpioWrite(data->TRIGGER, HIGH_LEVEL); 
-    gpioDelay(HIGH_LEVEL_TIMEOUT);    
-    gpioWrite(data->TRIGGER, LOW_LEVEL); 
-
-    if (WaitForEchoHigh(data->ECHO) != 0) continue;
-    
-    /* Module starts transmitting ultrasonic by this point */
-
-    // Get time from echo pin 
-    double readTime = ReadDataInSeconds(data->ECHO);
-    if (readTime < 0) continue; // bad read data, next loop
-
-    double distance = (SPEED_OF_SOUND * readTime) / 2;
-    double distanceCentimeters = distance * 100;
-
-    if (data->direction == FORWARD) forwardValue = distanceCentimeters;
-    else if (data->direction == LEFT) leftValue = distanceCentimeters;
-    else if (data->direction == RIGHT) rightValue = distanceCentimeters;
-
-    // printf("Distance is %.2f cm\n", distanceCentimeters);
+    UpdateEchoDate(FORWARD_TRIG_GPIO, FORWARD_ECHO_GPIO, FORWARD);
+    gpioDelay(ECHO_TIMEOUT);
+    UpdateEchoDate(LEFT_TRIG_GPIO, LEFT_ECHO_GPIO, LEFT);
+    gpioDelay(ECHO_TIMEOUT);
+    UpdateEchoDate(RIGHT_TRIG_GPIO, RIGHT_ECHO_GPIO, RIGHT);
+    gpioDelay(ECHO_TIMEOUT);
   }
+
+  return NULL;
+}
+
+/*
+  Helper function for ReadEchoData
+  Updates global echo sensor values
+*/
+void UpdateEchoDate(int TRIGGER, int ECHO, enum Direction direction) {
+
+  
+  // Trigger sensor to start measuring
+  gpioWrite(TRIGGER, HIGH_LEVEL); 
+  gpioDelay(HIGH_LEVEL_TIMEOUT);    
+  gpioWrite(TRIGGER, LOW_LEVEL); 
+
+  if (WaitForEchoHigh(ECHO) != 0) return;
+  
+  /* Module starts transmitting ultrasonic by this point */
+
+  // Get time from echo pin 
+  double readTime = ReadDataInSeconds(ECHO);
+  if (readTime < 0) return; // bad read data, next loop
+
+  double distance = (SPEED_OF_SOUND * readTime) / 2;
+  double distanceCentimeters = distance * 100;
+
+  if (direction == FORWARD) forwardValue = distanceCentimeters;
+  else if (direction == LEFT) leftValue = distanceCentimeters;
+  else if (direction == RIGHT) rightValue = distanceCentimeters;
+
+  // printf("Distance is %.2f cm\n", distanceCentimeters);
+  
 }
 
 void ExitProgram(int signal){
   printf("Exiting program...\n");
-  for (int i = 0; i < 3; i++) {
-    pthread_cancel(threads[i]);
-  }
-  freeReadDataArgs();
+  pthread_cancel(echoThread);
   gpioTerminate();
   exit(0);
 }

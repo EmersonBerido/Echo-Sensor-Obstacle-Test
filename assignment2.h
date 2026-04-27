@@ -30,15 +30,11 @@ enum Direction {FORWARD, LEFT, RIGHT};
 #define RIGHT_ECHO_GPIO 15
 #define RIGHT_TRIG_GPIO 23
 
-typedef struct {
-  int TRIGGER;
-  int ECHO;
-  enum Direction direction;
-} EchoData;
 
 // Timeouts
 #define HIGH_LEVEL_TIMEOUT 10
 #define TIMEOUT 0.03
+#define ECHO_TIMEOUT 80000 // 80 ms 
 
 #define SPEED_OF_SOUND 340
 
